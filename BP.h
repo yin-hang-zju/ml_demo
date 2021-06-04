@@ -5,7 +5,7 @@
  
 #define LAYER    5        //三层神经网络
 #define NUM      10       //每层的最多节点数
- 
+#define REGULAR  0.01      //正则化Weight Decay 
 #define A        30.0
 #define B        10.0     //A和B是S型函数的参数
 #define ITERS    5000      //最大训练次数,原来是1000

@@ -41,10 +41,11 @@ void BP::Train(bool debug /*=false */)
         Type accu = GetAccu();
         printf("All Samples Loss is %lf\n", accu);
         if(accu < ACCU) break;
-        if(last_acc > 0 && accu > last_acc) {
-            //误差震荡，减少学习率 :
+        if(last_acc > 0 && accu > last_acc && ETA_W > 0.000001) {
+            //误差震荡，需减少学习率 :
             ETA_W *=   0.5;   //权值调整率
             ETA_B *=   0.5;    //阀值调整率
+            printf("eta_w = %lf, eta_b =%lf\n", ETA_W, ETA_B);
         }
         last_acc = accu;
     }
@@ -248,7 +249,7 @@ void BP::UpdateNetWork()
     for(int i = 0; i < hd_nums[k-1]; i++)
     {
         for(int j = 0; j < ou_num; j++)
-            w[k][i][j] -= ETA_W * d[k][j] * x[k-1][i]; 
+            w[k][i][j] = w[k][i][j]*(1-ETA_W*REGULAR) - ETA_W * d[k][j] * x[k-1][i]; 
     }
     for(int i = 0; i < ou_num; i++)
         b[k][i] -= ETA_B * d[k][i];
@@ -258,7 +259,7 @@ void BP::UpdateNetWork()
         for(int i = 0; i < hd_nums[k-1]; i++)
         {
             for(int j = 0; j < hd_nums[k]; j++)
-                w[k][i][j] -= ETA_W * d[k][j] * x[k-1][i]; 
+                w[k][i][j] = w[k][i][j]*(1-ETA_W*REGULAR) - ETA_W * d[k][j] * x[k-1][i]; 
         }
         for(int i = 0; i < hd_nums[k]; i++)
             b[k][i] -= ETA_B * d[k][i];
