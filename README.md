@@ -1,1 +1,2 @@
-# ml_demo
+some machine learning demo code.
+may buggy
