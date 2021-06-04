@@ -39,8 +39,14 @@ void BP::Train(bool debug /*=false */)
         printf("This is the %d th trainning NetWork !\n", iter);
 
         Type accu = GetAccu();
-        printf("All Samples Accuracy is %lf\n", accu);
+        printf("All Samples Loss is %lf\n", accu);
         if(accu < ACCU) break;
+        if(last_acc > 0 && accu > last_acc) {
+            //误差震荡，减少学习率 :
+            ETA_W *=   0.5;   //权值调整率
+            ETA_B *=   0.5;    //阀值调整率
+        }
+        last_acc = accu;
     }
     printf("The BP NetWork train End!\n");
     if (debug)
@@ -114,6 +120,11 @@ inline Type getRandNum() {
 //初始化网络
 void BP::InitNetWork()
 {
+
+    ETA_W =   0.0035;   //权值调整率
+    ETA_B =   0.001;    //阀值调整率
+    last_acc = -1.0;    //上次模型的总误差..
+
     memset(w, 0, sizeof(w));      //初始化权值和阀值为0，也可以初始化随机值
     memset(b, 0, sizeof(b));
     //return; 不应该初始化为0吧？0就死了..

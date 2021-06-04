@@ -9,8 +9,6 @@
 #define A        30.0
 #define B        10.0     //A和B是S型函数的参数
 #define ITERS    5000      //最大训练次数,原来是1000
-#define ETA_W    0.0035   //权值调整率
-#define ETA_B    0.001    //阀值调整率
 #define ERROR    0.002    //单个样本允许的误差
 #define ONEITER  10000      //单个样本最大训练次数,原来没有上限
 #define ACCU     0.005    //每次迭代允许的误差
@@ -46,6 +44,9 @@ private:
     Type Sigmoid(const Type);   //计算Sigmoid的值
  
 private:
+    Type ETA_W ;   //权值调整率
+    Type ETA_B ;    //阀值调整率
+    Type last_acc ;    //上次模型的总误差..
     int in_num;                 //输入层节点数
     int ou_num;                 //输出层节点数
     int hd_nums[LAYER];                 //隐含层节点数
