@@ -5,7 +5,6 @@
  
 #define LAYER    5        //三层神经网络
 #define NUM      10       //每层的最多节点数
-#define REGULAR  0.01      //正则化Weight Decay 
 #define A        30.0
 #define B        10.0     //A和B是S型函数的参数
 #define ITERS    5000      //最大训练次数,原来是1000
@@ -44,8 +43,9 @@ private:
     Type Sigmoid(const Type);   //计算Sigmoid的值
  
 private:
-    Type ETA_W ;   //权值调整率
-    Type ETA_B ;    //阀值调整率
+    double REGULAR;     //正则化Weight Decay
+    double ETA_W ;   //权值调整率
+    double ETA_B ;    //阀值调整率
     Type last_acc ;    //上次模型的总误差..
     int in_num;                 //输入层节点数
     int ou_num;                 //输出层节点数

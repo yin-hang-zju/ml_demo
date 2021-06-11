@@ -65,7 +65,7 @@ Vector<Type> BP::ForeCast(const Vector<Type> data)
     ForwardTransfer();
     Vector<Type> v;
     for(int i = 0; i < ou_num; i++)
-        v.push_back(x[2][i]);
+        v.push_back(x[LAYER-1][i]);
     return v;
 }
 
@@ -125,6 +125,7 @@ void BP::InitNetWork()
     ETA_W =   0.0035;   //权值调整率
     ETA_B =   0.001;    //阀值调整率
     last_acc = -1.0;    //上次模型的总误差..
+    REGULAR  = 0.01;      //正则化Weight Decay
 
     memset(w, 0, sizeof(w));      //初始化权值和阀值为0，也可以初始化随机值
     memset(b, 0, sizeof(b));
@@ -173,7 +174,7 @@ void BP::ForwardTransfer()
         for(int i = 0; i < hd_nums[k-1]; i++)
             t += w[k][i][j] * x[k-1][i];
         t += b[k][j];
-        x[k][j] = Sigmoid(t);
+        x[k][j] = Sigmoid(t); //下载的代码如此。不过输出层的激活函数会不会用线性更好? TODO
     }
 }
 
@@ -182,7 +183,7 @@ Type BP::GetError(int cnt)
 {
     Type ans = 0;
     for(int i = 0; i < ou_num; i++)
-        ans += 0.5 * (x[2][i] - data.at(cnt).y[i]) * (x[2][i] - data.at(cnt).y[i]);
+        ans += 0.5 * (x[LAYER-1][i] - data.at(cnt).y[i]) * (x[LAYER-1][i] - data.at(cnt).y[i]);
     return ans;
 }
 
@@ -206,7 +207,7 @@ Type BP::GetAccu()
         ForwardTransfer();
         int n = data.at(i).y.size();
         for(int j = 0; j < n; j++)
-            ans += 0.5 * (x[2][j] - data.at(i).y[j]) * (x[2][j] - data.at(i).y[j]);
+            ans += 0.5 * (x[LAYER-1][j] - data.at(i).y[j]) * (x[LAYER-1][j] - data.at(i).y[j]);
     }
     return ans / num;
 }
@@ -250,6 +251,7 @@ void BP::UpdateNetWork()
     {
         for(int j = 0; j < ou_num; j++)
             w[k][i][j] = w[k][i][j]*(1-ETA_W*REGULAR) - ETA_W * d[k][j] * x[k-1][i]; 
+        //最后一层是不是不要正则化了 w[k][i][j] = w[k][i][j] - ETA_W * d[k][j] * x[k-1][i]; 
     }
     for(int i = 0; i < ou_num; i++)
         b[k][i] -= ETA_B * d[k][i];
@@ -295,7 +297,7 @@ int main() {
 	d.y[0] *= 2.0;
 	dataset.push_back(d);
 	
-	for(int nd=0; nd<100; nd++) {
+	for(int nd=0; nd<1000; nd++) {
 	    d.y[0] = 0.0;
 	    for(i=0; i<n; i++) {
 		d.x[i] = getRandNum(); //1.0 - 2.0*rand()/RAND_MAX;
@@ -304,7 +306,7 @@ int main() {
 	    dataset.push_back(d);
 	}
 
-	printf("in.size=%lu, %lu\n", dataset[0].x.size(), d.x.size());
+	printf("in.size=%lu, %lu. sample num=%lu\n", dataset[0].x.size(), d.x.size(), dataset.size());
 
 	a.GetData(dataset);
 	a.Train(true);
