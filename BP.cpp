@@ -105,10 +105,10 @@ void BP::OutputNetwork()
 void BP::GetNums()
 {
     hd_nums[0] = in_num = data[0].x.size();                         //获取输入层节点数
-    hd_nums[LAYER] = ou_num = data[0].y.size();                         //获取输出层节点数
+    hd_nums[LAYER-1] = ou_num = data[0].y.size();                         //获取输出层节点数
     int hd = (int)sqrt((in_num + ou_num) * 1.0) + 5;   //获取隐含层节点数
     if(hd > NUM) hd = NUM;                     //隐含层数目不能超过最大设置
-    for (int i=1; i<LAYER; i++) {
+    for (int i=1; i<LAYER-1; i++) {
         //这个网上下的程序中w和b的[0]都没有意义,hd_num本只有一个(原来LAYER=3只有1个隐藏层)。为保持一致，改成数组后hd_num[0]也不使用.其实hd_num[0]应该保存in_num
         hd_nums[i] = hd;
     }
@@ -289,7 +289,7 @@ int main() {
     srand(seed); 
     BP a;
     int i;
-    /**************/
+    /*************控制这里切换注释段,为啥不#ifdef..   */
     int n = 2;
     Vector<Type> x;
     //for(i=0; i<n; i++)

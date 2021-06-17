@@ -3,7 +3,7 @@
  
 #include <vector>
  
-#define LAYER    5        //三层神经网络
+#define LAYER    3        //三层神经网络
 #define NUM      10       //每层的最多节点数
  
 #define Type double
@@ -49,7 +49,7 @@ private:
     Type last_acc ;    //上次模型的总误差..
     int in_num;                 //输入层节点数
     int ou_num;                 //输出层节点数
-    int hd_nums[LAYER+1];       //隐含层节点数.0同输入,LAYER同输出..
+    int hd_nums[LAYER];       //隐含层节点数.0同输入,最后一个同输出..
  
     Vector<Data> data;          //输入输出数据
  
