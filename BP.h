@@ -3,7 +3,7 @@
  
 #include <vector>
  
-#define LAYER    3        //三层神经网络
+#define LAYER    5        //三层神经网络
 #define NUM      10       //每层的最多节点数
  
 #define Type double

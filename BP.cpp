@@ -195,7 +195,7 @@ Type BP::GetError(int cnt)
 
 //误差信号反向传递子过程
 void BP::ReverseTransfer(int cnt)
-{
+{ // tmp=(y-x[k]); delta = tmp * activation_func_diff(x[k]); tmp = delta * w
     CalcDelta(cnt);   
     UpdateNetWork();
 }
@@ -225,18 +225,17 @@ void BP::CalcDelta(int cnt)
     int k = LAYER-1;
     for(int i = 0; i < ou_num; i++)
         d[k][i] = (x[k][i] - data.at(cnt).y[i]) * x[k][i] * (A - x[k][i]) / (A * B);
-    //计算隐含层的delta
+    /*/计算隐含层的delta
     for(int i = 0; i < hd_nums[k-1]; i++)
     {
         Type t = 0;
         for(int j = 0; j < ou_num; j++)
             t += w[k][i][j] * d[k][j];
         d[k-1][i] = t * x[k-1][i] * (A - x[k-1][i]) / (A * B);
-    }
-    while(k > 2) {
-        --k;
-        for(int i = 0; i < hd_nums[k]; i++)
-            d[k][i] = (x[k][i] - data.at(cnt).y[i]) * x[k][i] * (A - x[k][i]) / (A * B);
+    }*/
+    while(k > 1) {
+        //for(int i = 0; i < hd_nums[k]; i++)
+        //    d[k][i] = (x[k][i] - data.at(cnt).y[i]) * x[k][i] * (A - x[k][i]) / (A * B);
         //计算隐含层的delta
         for(int i = 0; i < hd_nums[k-1]; i++)
         {
@@ -245,6 +244,7 @@ void BP::CalcDelta(int cnt)
                 t += w[k][i][j] * d[k][j];
             d[k-1][i] = t * x[k-1][i] * (A - x[k-1][i]) / (A * B);
         }
+        --k;
     }
 }
 
