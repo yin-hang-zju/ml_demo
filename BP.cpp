@@ -3,7 +3,7 @@
 #include <math.h>
 #include <assert.h>
 #include "BP.h"
-
+int seed=1;Type MIN_ETA = 0.000001;
 //获取训练所有样本数据
 void BP::GetData(const Vector<Data> _data)
 {
@@ -41,11 +41,11 @@ void BP::Train(bool debug /*=false */)
         Type accu = GetAccu();
         printf("All Samples Loss is %lf\n", accu);
         if(accu < ACCU) break;
-        if(last_acc > 0 && accu > last_acc && ETA_W > 0.000001) {
-            //误差震荡，需减少学习率 :
-            ETA_W *=   0.5;   //权值调整率
-            ETA_B *=   0.5;    //阀值调整率
-            printf("eta_w = %lf, eta_b =%lf\n", ETA_W, ETA_B);
+        if(last_acc > 0 && accu > last_acc) { //误差震荡，需减少学习率 :
+            if(ETA_W > MIN_ETA) {
+                ETA_W *=   0.5;   //权值调整率
+                ETA_B *=   0.5;    //阀值调整率
+            } printf("eta_w = %lf, eta_b =%lf\n", ETA_W, ETA_B);
         }
         last_acc = accu;
     }
@@ -105,7 +105,7 @@ void BP::OutputNetwork()
 void BP::GetNums()
 {
     hd_nums[0] = in_num = data[0].x.size();                         //获取输入层节点数
-    ou_num = data[0].y.size();                         //获取输出层节点数
+    hd_nums[LAYER] = ou_num = data[0].y.size();                         //获取输出层节点数
     int hd = (int)sqrt((in_num + ou_num) * 1.0) + 5;   //获取隐含层节点数
     if(hd > NUM) hd = NUM;                     //隐含层数目不能超过最大设置
     for (int i=1; i<LAYER; i++) {
@@ -115,7 +115,7 @@ void BP::GetNums()
 }
 
 inline Type getRandNum() {
-    return 1.0 - 2.0*rand()/RAND_MAX;
+    return 1.0 - 2.0*rand()/RAND_MAX; //或者以[-r, r]上的均匀分布初始化某层的权值，其中：r=sqrt(6/(n_in+n_out))
 }
 
 //初始化网络
@@ -126,11 +126,17 @@ void BP::InitNetWork()
     ETA_B =   0.001;    //阀值调整率
     last_acc = -1.0;    //上次模型的总误差..
     REGULAR  = 0.01;      //正则化Weight Decay
+    A =       30.0   ;
+    B =       10.0   ;//A和B是S型函数的参数
+    ITERS =   5000    ;//最大训练次数,原来是1000
+    ERROR =   0.002  ;//单个样本允许的误差
+    ONEITER = 10000    ;//单个样本最大训练次数,原来没有上限
+    ACCU =    0.005  ;//每次迭代允许的误差
 
     memset(w, 0, sizeof(w));      //初始化权值和阀值为0，也可以初始化随机值
     memset(b, 0, sizeof(b));
     //return; 不应该初始化为0吧？0就死了..
-    srand(time(NULL)); 
+    //seed = time(NULL); printf("seed = %d\n", seed); srand(seed); 
     int k;
     for(k=1; k<LAYER-1; k++) {
         for(int j = 0; j < hd_nums[k]; j++)
@@ -273,55 +279,91 @@ void BP::UpdateNetWork()
 //计算Sigmoid函数的值
 Type BP::Sigmoid(const Type x)
 {
-    return A / (1 + exp(-x / B));
+    Type res =  A / (1 + exp(-x / B));
+    return res;
 }
 
 int main() {
-	BP a;
-	int i, n = 3;
-	Vector<Type> x;
-	for(i=0; i<n; i++)
-		x.push_back(0.1*(i+1));
+    seed = time(NULL); 
+    printf("seed = %d\n", seed); 
+    srand(seed); 
+    BP a;
+    int i;
+    /**************/
+    int n = 2;
+    Vector<Type> x;
+    //for(i=0; i<n; i++)
+    x.push_back(0);
+    x.push_back(1);
 //{0.1,0.2,0.3};
-	printf("x.size=%lu\n", x.size());
-	Vector<Type> y;
-	y.push_back(0.6);
-	Data d;
-	d.x=x;
-	d.y=y;
-	srand(time(NULL));
-	Vector<Data> dataset;
-	dataset.push_back(d);
-	for(i=0; i<n; i++)
-		d.x[i] *= 2.0;
-	d.y[0] *= 2.0;
-	dataset.push_back(d);
-	
-	for(int nd=0; nd<1000; nd++) {
-	    d.y[0] = 0.0;
-	    for(i=0; i<n; i++) {
-		d.x[i] = getRandNum(); //1.0 - 2.0*rand()/RAND_MAX;
-	    	d.y[0] += d.x[i];
-	    }
-	    dataset.push_back(d);
-	}
+    printf("x.size=%lu\n", x.size());
+    Vector<Type> y;
+    y.push_back(1);//0.6);
+    Data d;
+    d.x=x;
+    d.y=y;
+    Vector<Data> dataset;
+    dataset.push_back(d);
+    d.x[0] = 1;
+    d.x[1] = 0;
+    d.y[0] = 1;
+    dataset.push_back(d);
+    d.x[0] = 1;
+    d.x[1] = 1;
+    d.y[0] = 0;
+    dataset.push_back(d);
+    d.x[0] = 0;
+    d.x[1] = 0;
+    d.y[0] = 0;
+    dataset.push_back(d);
+    /*/
+    int n = 3;
+    Vector<Type> x;
+    for(i=0; i<n; i++)
+        x.push_back(0.1*(i+1));
+//{0.1,0.2,0.3};
+    printf("x.size=%lu\n", x.size());
+    Vector<Type> y;
+    y.push_back(1);//0.6);
+    Data d;
+    d.x=x;
+    d.y=y;
+    Vector<Data> dataset;
+    dataset.push_back(d);
+    for(i=0; i<n; i++)
+        d.x[i] *= 2.0;
+    //d.y[0] *= 2.0;
+    dataset.push_back(d);
+    
+    for(int nd=0; nd<100; nd++) {
+        d.y[0] = 0.0;
+        for(i=0; i<n; i++) {
+            d.x[i] = getRandNum(); //1.0 - 2.0*rand()/RAND_MAX;
+            d.y[0] += d.x[i];
+        }
+        if (d.y[0] > 0)
+            d.y[0] = 1;
+        else
+            d.y[0] = 0;
+        dataset.push_back(d);
+    }
+/**/
+    printf("in.size=%lu, %lu. sample num=%lu\n", dataset[0].x.size(), d.x.size(), dataset.size());
 
-	printf("in.size=%lu, %lu. sample num=%lu\n", dataset[0].x.size(), d.x.size(), dataset.size());
+    a.GetData(dataset);
+    a.Train(true);
+    //Type acu = a.GetAccu();
+    //printf("acu = %lf\n", acu);
+    while(1) {
+        printf("Please input x(%d):\n", n);
+        for(i=0; i<n; i++) {
+            Type input;
+            if (scanf("%lf", &input) < 1)
+                return 0;
+            x[i] = input;
+        }
+        printf("res = %lf\n", a.ForeCast(x)[0]);
+    }
 
-	a.GetData(dataset);
-	a.Train(true);
-	//Type acu = a.GetAccu();
-	//printf("acu = %lf\n", acu);
-	while(1) {
-		printf("Please input x(%d):\n", n);
-		for(i=0; i<n; i++) {
-			Type input;
-			if (scanf("%lf", &input) < 1)
-				return 0;
-			x[i] = input;
-		}
-		printf("res = %lf\n", a.ForeCast(x)[0]);
-	}
-
-	return 0;
+    return 0;
 }
