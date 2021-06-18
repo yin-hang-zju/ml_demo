@@ -3,7 +3,7 @@
 #include <math.h>
 #include <assert.h>
 #include "BP.h"
-int seed=1;Type MIN_ETA = 0.000001;
+int seed=1;Type MIN_ETA = 0.000001, BB = A / ( exp(-1.0/B/B) + 1.0);
 //获取训练所有样本数据
 void BP::GetData(const Vector<Data> _data)
 {
@@ -132,7 +132,7 @@ void BP::InitNetWork()
     ERROR =   0.002  ;//单个样本允许的误差
     ONEITER = 10000    ;//单个样本最大训练次数,原来没有上限
     ACCU =    0.005  ;//每次迭代允许的误差
-
+    BB = A / ( exp(-1.0/B/B) + 1.0);
     memset(w, 0, sizeof(w));      //初始化权值和阀值为0，也可以初始化随机值
     memset(b, 0, sizeof(b));
     //return; 不应该初始化为0吧？0就死了..
@@ -170,7 +170,7 @@ void BP::ForwardTransfer()
             for(int i = 0; i < hd_nums[k-1]; i++)
                 t += w[k][i][j] * x[k-1][i];
             t += b[k][j];
-            x[k][j] = Sigmoid(t);
+            x[k][j] = Activator(t);
         }
     }
     //计算输出层各节点的输出值
@@ -180,7 +180,7 @@ void BP::ForwardTransfer()
         for(int i = 0; i < hd_nums[k-1]; i++)
             t += w[k][i][j] * x[k-1][i];
         t += b[k][j];
-        x[k][j] = Sigmoid(t); //下载的代码如此。不过输出层的激活函数会不会用线性更好? TODO
+        x[k][j] = Activator(t); //下载的代码如此。不过输出层的激活函数会不会用线性更好? TODO
     }
 }
 
@@ -195,11 +195,22 @@ Type BP::GetError(int cnt)
 
 //误差信号反向传递子过程
 void BP::ReverseTransfer(int cnt)
-{ // tmp=(y-x[k]); delta = tmp * activation_func_diff(x[k]); tmp = delta * w
-    CalcDelta(cnt);   
-    UpdateNetWork();
-}
+{   
+    Type tmp[NUM+1], delta[LAYER]; 
+    int k = LAYER-1;
+    delta[k] = 0.0;
+    for(int i = 0; i < hd_nums[k]; i++) {
+        tmp[i] = x[k][i] - data.at(cnt).y[i]; 
+        delta[k] += tmp[i] * Diff_Activator(x[k][i]);
+    }
 
+    for(k = LAYER-1; k>1; k--) { 
+        for(int i = 0; i < hd_nums[k]; i++) {
+            tmp[i] = delta[k+1] * w[k]; //tmp是矩阵，两个维度分别是相邻两层的神经元数量..
+            Type delta = tmp * Diff_Activator(x[k][i]); tmp = delta * w //各向量矩阵的大小需要确认下 TODO
+    }
+} // tmp=(y-x[k]); delta = tmp multiply Diff_Activator(x[k]); tmp = delta * w
+        //CalcDelta(cnt);   UpdateNetWork();
 //计算所有样本的精度
 Type BP::GetAccu()
 {
@@ -225,14 +236,6 @@ void BP::CalcDelta(int cnt)
     int k = LAYER-1;
     for(int i = 0; i < ou_num; i++)
         d[k][i] = (x[k][i] - data.at(cnt).y[i]) * x[k][i] * (A - x[k][i]) / (A * B);
-    /*/计算隐含层的delta
-    for(int i = 0; i < hd_nums[k-1]; i++)
-    {
-        Type t = 0;
-        for(int j = 0; j < ou_num; j++)
-            t += w[k][i][j] * d[k][j];
-        d[k-1][i] = t * x[k-1][i] * (A - x[k-1][i]) / (A * B);
-    }*/
     while(k > 1) {
         //for(int i = 0; i < hd_nums[k]; i++)
         //    d[k][i] = (x[k][i] - data.at(cnt).y[i]) * x[k][i] * (A - x[k][i]) / (A * B);
@@ -248,7 +251,7 @@ void BP::CalcDelta(int cnt)
     }
 }
 
-//根据计算出的调整量对BP网络进行调整
+//根据计算出的调整量对BP网络进行调整 251行
 void BP::UpdateNetWork()
 {
     //隐含层和输出层之间权值和阀值调整..
@@ -276,11 +279,22 @@ void BP::UpdateNetWork()
     return;
 }
 
-//计算Sigmoid函数的值
-Type BP::Sigmoid(const Type x)
+Type Sigmoid(const Type x)
 {
     Type res =  A / (1 + exp(-x / B));
     return res;
+}
+//计算Activator函数的值
+Type BP::Activator(const Type x)
+{
+    Type res =  A / (1 + exp(-x / B));
+    return res;
+}
+
+Type Diff_Activator(const Type x) {
+    Type t = Sigmoid(x);
+    t = t * (1.0 - t) * BB;
+    return t;
 }
 
 int main() {
