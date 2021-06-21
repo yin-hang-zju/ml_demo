@@ -3,7 +3,7 @@
 #include <math.h>
 #include <assert.h>
 #include "BP.h"
-int seed=1;Type MIN_ETA = 0.000001, BB = A / ( exp(-1.0/B/B) + 1.0);
+int seed=1;Type MIN_ETA = 0.000001, BB;// = A / ( exp(-1.0/B/B) + 1.0);
 //获取训练所有样本数据
 void BP::GetData(const Vector<Data> _data)
 {
@@ -146,7 +146,7 @@ void BP::InitNetWork()
             b[k][j] = getRandNum();
         }
     }
-    //k=2;
+    //k=LAYER-1;
     for(int j = 0; j < ou_num; j++)
     {
         for(int i = 0; i < hd_nums[k-1]; i++)
@@ -172,7 +172,7 @@ void BP::ForwardTransfer()
             t += b[k][j];
             x[k][j] = Activator(t);
         }
-    }
+    } //k=LAYER-1;
     //计算输出层各节点的输出值
     for(int j = 0; j < ou_num; j++)
     {
@@ -196,19 +196,47 @@ Type BP::GetError(int cnt)
 //误差信号反向传递子过程
 void BP::ReverseTransfer(int cnt)
 {   
-    Type tmp[NUM+1], delta[LAYER]; 
-    int k = LAYER-1;
-    delta[k] = 0.0;
-    for(int i = 0; i < hd_nums[k]; i++) {
-        tmp[i] = x[k][i] - data.at(cnt).y[i]; 
-        delta[k] += tmp[i] * Diff_Activator(x[k][i]);
+    Type tmp[NUM+1];
+    Type delta[NUM+1]; 
+    int k = LAYER-1, i, j;
+    //delta[k] = 0.0;
+    for(i = 0; i < hd_nums[k]; i++) {
+        delta[i] = x[k][i] - data.at(cnt).y[i]; 
     }
+    for(k = LAYER-1; k>1; k--) {
+        for(j = 0; j < hd_nums[k-1]; j++) {
+            tmp[j] = 0;
+            for(i = 0; i < hd_nums[k]; i++) {
+                tmp[j] += delta[i]*w[k][j][i]; //还是w[k][i][j]呢?..
+            }            
+            Type t = 0;
+            for(i = 0; i < hd_nums[k-2]; i++)
+                t += w[k-1][i][j] * x[k-2][i];
+            t += b[k-1][j];
+            tmp[j] *= Diff_Activator(t);
+        }
+        for(j = 0; j < hd_nums[k-1]; j++) {
+            delta[j] = tmp[j];
+        }
 
-    for(k = LAYER-1; k>1; k--) { 
-        for(int i = 0; i < hd_nums[k]; i++) {
+        //更新 :  w(k) = w(k) - eta * (x(k-1)*delta(k))T
+        //        b(k) = b(k) - eta* (delta(k))T
+        for(i = 0; i < hd_nums[k-1]; i++)
+        {
+            for(j = 0; j < hd_nums[k]; j++)
+                w[k][i][j] = w[k][i][j]*(1-ETA_W*REGULAR) - ETA_W * delta[j] * x[k-1][i]; 
+        }
+        for(i = 0; i < hd_nums[k]; i++)
+            b[k][i] -= ETA_B * delta[i];
+    }
+        //delta[k] += tmp[i] * Diff_Activator(x[k][i]);
+    // 第k层的delta,有0~hd_nums[k-1]共1*k维, = 第(k+1)层的delta（1*hd_nums[k+1]维） * 第k+1层的w（hd_nums[k+1}*hd_nums[k]维），后，每项乘以标量 Diff_Activator(激活前的第k层输出，即wx+b)
+
+    /*for(k = LAYER-1; k>1; k--) { 
+        for(i = 0; i < hd_nums[k]; i++) {
             tmp[i] = delta[k+1] * w[k]; //tmp是矩阵，两个维度分别是相邻两层的神经元数量..
             Type delta = tmp * Diff_Activator(x[k][i]); tmp = delta * w //各向量矩阵的大小需要确认下 TODO
-    }
+    }*/
 } // tmp=(y-x[k]); delta = tmp multiply Diff_Activator(x[k]); tmp = delta * w
         //CalcDelta(cnt);   UpdateNetWork();
 //计算所有样本的精度
@@ -279,7 +307,7 @@ void BP::UpdateNetWork()
     return;
 }
 
-Type Sigmoid(const Type x)
+Type BP::Sigmoid(const Type x)
 {
     Type res =  A / (1 + exp(-x / B));
     return res;
@@ -291,7 +319,7 @@ Type BP::Activator(const Type x)
     return res;
 }
 
-Type Diff_Activator(const Type x) {
+Type BP::Diff_Activator(const Type x) {
     Type t = Sigmoid(x);
     t = t * (1.0 - t) * BB;
     return t;

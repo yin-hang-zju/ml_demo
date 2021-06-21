@@ -34,7 +34,9 @@ private:
     void UpdateNetWork();       //更新权值和阀值
     Type GetError(int);         //计算单个样本的误差
     Type GetAccu();             //计算所有样本的精度
+    Type Sigmoid(const Type x);
     Type Activator(const Type);   //计算激活函数的值,如Sigmoid
+    Type Diff_Activator(const Type x);
  
 private:
     double REGULAR;     //正则化Weight Decay
