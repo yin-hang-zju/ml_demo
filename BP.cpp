@@ -41,19 +41,19 @@ void BP::Train(bool debug /*=false */)
         Type accu = GetAccu();
         printf("All Samples Loss is %lf\n", accu);
         if(accu < ACCU) break;
-        if(last_acc > 0 && accu > last_acc) { //误差震荡，需减少学习率 :
+        if(accu > last_acc) { //误差震荡，需减少学习率 :
+            if (last_acc > 0) {
             if(ETA_W > MIN_ETA) {
                 ETA_W *=   0.5;   //权值调整率
                 ETA_B *=   0.5;    //阀值调整率
-            } printf("eta_w = %lf, eta_b =%lf\n", ETA_W, ETA_B);
-        }
-        last_acc = accu;
+            } printf("eta_w = %lf, eta_b =%lf\n", ETA_W, ETA_B); } else last_acc = accu;
+        } else
+            last_acc = accu; //只记录最小值..
     }
     printf("The BP NetWork train End!\n");
     if (debug)
             OutputNetwork(); //输出看看。可禁掉.. 
 }
-
 //根据训练好的网络来预测输出值
 Vector<Type> BP::ForeCast(const Vector<Type> data)
 {
@@ -126,8 +126,8 @@ void BP::InitNetWork()
     ETA_B =   0.001;    //阀值调整率
     last_acc = -1.0;    //上次模型的总误差..
     REGULAR  = 0.01;      //正则化Weight Decay
-    A =       30.0   ;
-    B =       10.0   ;//A和B是S型函数的参数
+    A =  1.0;//     30.0   ;
+    B =  0.1;//     10.0   ;//A和B是S型函数的参数
     ITERS =   5000    ;//最大训练次数,原来是1000
     ERROR =   0.002  ;//单个样本允许的误差
     ONEITER = 10000    ;//单个样本最大训练次数,原来没有上限
@@ -180,7 +180,7 @@ void BP::ForwardTransfer()
         for(int i = 0; i < hd_nums[k-1]; i++)
             t += w[k][i][j] * x[k-1][i];
         t += b[k][j];
-        x[k][j] = Activator(t); //下载的代码如此。不过输出层的激活函数会不会用线性更好? TODO
+        x[k][j] = t; //Activator(t); //下载的代码如此。不过输出层的激活函数会不会用线性更好? TODO
     }
 }
 
@@ -207,7 +207,7 @@ void BP::ReverseTransfer(int cnt)
         for(j = 0; j < hd_nums[k-1]; j++) {
             tmp[j] = 0;
             for(i = 0; i < hd_nums[k]; i++) {
-                tmp[j] += delta[i]*w[k][j][i]; //还是w[k][i][j]呢?..
+                tmp[j] += delta[i]*w[k][j][i]; //不是w[k][i][j]..
             }            
             Type t = 0;
             for(i = 0; i < hd_nums[k-2]; i++)
@@ -315,14 +315,22 @@ Type BP::Sigmoid(const Type x)
 //计算Activator函数的值
 Type BP::Activator(const Type x)
 {
-    Type res =  A / (1 + exp(-x / B));
-    return res;
+    //Type res =  A / (1 + exp(-x / B));
+    //return res;
+    if (x >= 0.0)
+        return A;
+    else 
+        return B*x;
 }
 
 Type BP::Diff_Activator(const Type x) {
-    Type t = Sigmoid(x);
-    t = t * (1.0 - t) * BB;
-    return t;
+    if (x >= 0.0)
+        return A;
+    else 
+        return B;
+    //Type t = Sigmoid(x);
+    //t = t * (1.0 - t) * BB;
+    //return t;
 }
 
 int main() {
