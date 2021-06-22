@@ -19,7 +19,8 @@ void BP::Train(bool debug /*=false */)
     GetNums();
     InitNetWork();
     int num = data.size();
-
+    int min_iter = -1;
+    Type min_acc = 99999;
     for(int iter = 0; iter <= ITERS; iter++)
     {
         if (debug)
@@ -50,11 +51,15 @@ void BP::Train(bool debug /*=false */)
                     ETA_W *=   0.5;   //权值调整率
                     ETA_B *=   0.5;    //阀值调整率
                 } 
-                printf("eta_w = %lf, eta_b =%lf\n", ETA_W, ETA_B); 
+                printf("eta_w = %lf, eta_b =%lg\n", ETA_W, ETA_B); 
             } else 
                 last_acc = accu;
-        } else
-            last_acc = accu; //只记录最小值..
+        } 
+        last_acc = accu; 
+        if (accu < min_acc) { //只记录最小值..
+            min_acc = accu;
+            min_iter = iter;
+        }
     }
     printf("The BP NetWork train End!\n");
     if (debug)
@@ -84,16 +89,16 @@ void BP::OutputNetwork()
     for(int j = 0; j < hd_nums[1]; j++)
     {
         for(int i = 0; i < in_num; i++)
-            printf("%lf ",w[k][i][j]);
-        printf(", %lf\n", b[k][j]);
+            printf("%lg ",w[k][i][j]);
+        printf(", %lg\n", b[k][j]);
     }
     printf("\n");
     for(k=2; k<LAYER-1; k++) {
         for(int j = 0; j < hd_nums[k]; j++)
         {
             for(int i = 0; i < hd_nums[k-1]; i++)
-                printf("%lf ",w[k][i][j]);
-            printf(", %lf\n", b[k][j]);
+                printf("%lg ",w[k][i][j]);
+            printf(", %lg\n", b[k][j]);
         }
         printf("\n");
     }
@@ -102,8 +107,8 @@ void BP::OutputNetwork()
     for(int j = 0; j < ou_num; j++)
     {
         for(int i = 0; i < hd_nums[k-1]; i++)
-            printf("%lf ",w[k][i][j]);
-        printf(", %lf\n", b[k][j]);
+            printf("%lg ",w[k][i][j]);
+        printf(", %lg\n", b[k][j]);
     }
   printf("}\n");
 }
@@ -120,8 +125,12 @@ void BP::GetNums()
     }
 }
 
-inline Type getRandNum() {
-    return 1.0 - 2.0*rand()/RAND_MAX; //或者以[-r, r]上的均匀分布初始化某层的权值，其中：r=sqrt(6/(n_in+n_out))
+inline Type getRandNum(int in, int out) {
+    Type para = 1.0;
+    if (in > 0 && out > 0) {
+        para = sqrt(12.0/(in+out));
+    }
+    return para - para*2.0*rand()/RAND_MAX; //或者以[-r, r]上的均匀分布初始化某层的权值，其中：r=sqrt(6/(n_in+n_out))
 }
 
 //初始化网络
@@ -131,7 +140,7 @@ void BP::InitNetWork()
     ETA_W =   0.0035;   //权值调整率
     ETA_B =   0.001;    //阀值调整率
     last_acc = -1.0;    //上次模型的总误差..
-    REGULAR  = 0.01;      //正则化Weight Decay
+    REGULAR  = 0; //一开始可不加,眼看过拟合了再加。0.01;      //正则化Weight Decay
     A =  1.0;//     30.0   ;
     B =  0.1;//     10.0   ;//A和B是S型函数的参数
     ITERS =   999000    ;//最大训练次数,原来是1000
@@ -148,16 +157,16 @@ void BP::InitNetWork()
         for(int j = 0; j < hd_nums[k]; j++)
         {
             for(int i = 0; i < hd_nums[k-1]; i++)
-                w[k][i][j] = getRandNum();
-            b[k][j] = getRandNum();
+                w[k][i][j] = getRandNum(hd_nums[k-1], hd_nums[k]);
+            b[k][j] = getRandNum(0, 0);
         }
     }
     //k=LAYER-1;
     for(int j = 0; j < ou_num; j++)
     {
         for(int i = 0; i < hd_nums[k-1]; i++)
-            w[k][i][j] = getRandNum();
-        b[k][j] = getRandNum();
+            w[k][i][j] = getRandNum(hd_nums[k-1], hd_nums[k]);
+        b[k][j] = getRandNum(0, 0);
     }
 
     //printf("in_num=%d, hd_num=%d, ou_num=%d\n", in_num, hd_num, ou_num);
