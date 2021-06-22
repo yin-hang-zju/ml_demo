@@ -3,7 +3,9 @@
 #include <math.h>
 #include <assert.h>
 #include "BP.h"
-int seed=1;Type MIN_ETA = 0.000001, BB;// = A / ( exp(-1.0/B/B) + 1.0);
+
+int seed=1;
+Type MIN_ETA = 0.000001, BB;// = A / ( exp(-1.0/B/B) + 1.0);
 //获取训练所有样本数据
 void BP::GetData(const Vector<Data> _data)
 {
@@ -39,14 +41,18 @@ void BP::Train(bool debug /*=false */)
         printf("This is the %d th trainning NetWork !\n", iter);
 
         Type accu = GetAccu();
-        printf("All Samples Loss is %lf\n", accu);
-        if(accu < ACCU) break;
+        printf("All Samples Loss is %.22lg\n", accu);
+        if(accu < ACCU) 
+            break;
         if(accu > last_acc) { //误差震荡，需减少学习率 :
             if (last_acc > 0) {
-            if(ETA_W > MIN_ETA) {
-                ETA_W *=   0.5;   //权值调整率
-                ETA_B *=   0.5;    //阀值调整率
-            } printf("eta_w = %lf, eta_b =%lf\n", ETA_W, ETA_B); } else last_acc = accu;
+                if(ETA_W > MIN_ETA) {
+                    ETA_W *=   0.5;   //权值调整率
+                    ETA_B *=   0.5;    //阀值调整率
+                } 
+                printf("eta_w = %lf, eta_b =%lf\n", ETA_W, ETA_B); 
+            } else 
+                last_acc = accu;
         } else
             last_acc = accu; //只记录最小值..
     }
@@ -128,10 +134,10 @@ void BP::InitNetWork()
     REGULAR  = 0.01;      //正则化Weight Decay
     A =  1.0;//     30.0   ;
     B =  0.1;//     10.0   ;//A和B是S型函数的参数
-    ITERS =   5000    ;//最大训练次数,原来是1000
+    ITERS =   999000    ;//最大训练次数,原来是1000
     ERROR =   0.002  ;//单个样本允许的误差
     ONEITER = 10000    ;//单个样本最大训练次数,原来没有上限
-    ACCU =    0.005  ;//每次迭代允许的误差
+    ACCU =    0.00000001; //0.005  ;//每次迭代允许的误差
     BB = A / ( exp(-1.0/B/B) + 1.0);
     memset(w, 0, sizeof(w));      //初始化权值和阀值为0，也可以初始化随机值
     memset(b, 0, sizeof(b));
@@ -318,7 +324,7 @@ Type BP::Activator(const Type x)
     //Type res =  A / (1 + exp(-x / B));
     //return res;
     if (x >= 0.0)
-        return A;
+        return A*x;
     else 
         return B*x;
 }
