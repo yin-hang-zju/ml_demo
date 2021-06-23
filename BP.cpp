@@ -44,7 +44,7 @@ void BP::Train(bool debug /*=false */)
         Type accu = GetAccu();
         printf("All Samples Loss is %.22lg\n", accu);
         if(accu < ACCU) {
-            if(accu < ACCU) 
+            if(accu < ACCU) //可以debug时手工禁止跳出..
                 break;
         }
         if(accu > last_acc) { //误差震荡，需减少学习率 :
@@ -256,7 +256,7 @@ void BP::ReverseTransfer(int cnt)
     }*/
 } // tmp=(y-x[k]); delta = tmp multiply Diff_Activator(x[k]); tmp = delta * w
         //CalcDelta(cnt);   UpdateNetWork();
-//计算所有样本的精度
+//计算所有样本的精度——下载的程序这个Accu的命名不大好..但各种大小写变形用了很多就先不改了.叫Loss或Cost更好。多分类时一般建议改用交叉熵..
 Type BP::GetAccu()
 {
     Type ans = 0;
@@ -274,7 +274,7 @@ Type BP::GetAccu()
     return ans / num;
 }
 
-//计算调整量
+//计算调整量——不知对不对，已废弃重写..
 void BP::CalcDelta(int cnt)
 {
     //计算输出层的delta
@@ -296,7 +296,7 @@ void BP::CalcDelta(int cnt)
     }
 }
 
-//根据计算出的调整量对BP网络进行调整 251行
+//根据计算出的调整量对BP网络进行调整——不知对不对，已废弃重写..
 void BP::UpdateNetWork()
 {
     //隐含层和输出层之间权值和阀值调整..
