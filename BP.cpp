@@ -359,15 +359,19 @@ int main() {
     Vector<Type> x;
     //for(i=0; i<n; i++)
     x.push_back(0);
-    x.push_back(1);
+    x.push_back(0);
 //{0.1,0.2,0.3};
     printf("x.size=%lu\n", x.size());
     Vector<Type> y;
-    y.push_back(1);//0.6);
+    y.push_back(0);//0.6);
     Data d;
     d.x=x;
     d.y=y;
     Vector<Data> dataset;
+    dataset.push_back(d);
+    d.x[0] = 0;
+    d.x[1] = 1;
+    d.y[0] = 1;
     dataset.push_back(d);
     d.x[0] = 1;
     d.x[1] = 0;
@@ -375,10 +379,6 @@ int main() {
     dataset.push_back(d);
     d.x[0] = 1;
     d.x[1] = 1;
-    d.y[0] = 0;
-    dataset.push_back(d);
-    d.x[0] = 0;
-    d.x[1] = 0;
     d.y[0] = 0;
     dataset.push_back(d);
     /*/
