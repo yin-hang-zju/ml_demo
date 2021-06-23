@@ -43,8 +43,10 @@ void BP::Train(bool debug /*=false */)
 
         Type accu = GetAccu();
         printf("All Samples Loss is %.22lg\n", accu);
-        if(accu < ACCU) 
-            break;
+        if(accu < ACCU) {
+            if(accu < ACCU) 
+                break;
+        }
         if(accu > last_acc) { //误差震荡，需减少学习率 :
             if (last_acc > 0) {
                 if(ETA_W > MIN_ETA) {
