@@ -5,7 +5,7 @@
 #include "BP.h"
 
 int seed=1;
-Type MIN_ETA = 0.000001, BB;// = A / ( exp(-1.0/B/B) + 1.0);
+Type MIN_ETA = 1E-99, SMALL_ETA=0.0001, BB;// = A / ( exp(-1.0/B/B) + 1.0);
 //获取训练所有样本数据
 void BP::GetData(const Vector<Data> _data)
 {
@@ -25,12 +25,12 @@ void BP::Train(bool debug /*=false */)
     {
         if (debug)
             OutputNetwork(); //输出看看。可禁掉.. 
+        if (ETA_W < SMALL_ETA) { ETA_W = SMALL_ETA; ETA_B = 0.1*SMALL_ETA; } //让学习率恢复一下..
         for(int cnt = 0; cnt < num; cnt++)
         {
             //第一层输入节点赋值
             for(int i = 0; i < in_num; i++)
                 x[0][i] = data.at(cnt).x[i];
-
             for(int one_sample_iter=0; one_sample_iter<ONEITER; one_sample_iter++)
             {
                 ForwardTransfer(); 
@@ -414,11 +414,11 @@ int main() {
     a.GetData(dataset);
     a.Train(true);
     //Type acu = a.GetAccu();
-    //printf("acu = %lf\n", acu);
-    while(1) {
-        printf("Please input x(%d):\n", n);
-        for(i=0; i<n; i++) {
-            Type input;
+//printf("acu = %lf\n", acu);
+while(1) {
+    printf("Please input x(%d):\n", n);
+    for(i=0; i<n; i++) {
+        Type input;
             if (scanf("%lf", &input) < 1)
                 return 0;
             x[i] = input;
