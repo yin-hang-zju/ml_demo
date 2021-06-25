@@ -20,7 +20,7 @@ void BP::Train(bool debug /*=false */)
     InitNetWork();
     int num = data.size();
     int min_iter = -1;
-    Type min_acc = 99999;
+    Type min_acc = 99999, last_error = -1;
     for(int iter = 0; iter <= ITERS; iter++)
     {
         if (debug)
@@ -33,9 +33,12 @@ void BP::Train(bool debug /*=false */)
 
             for(int one_sample_iter=0; one_sample_iter<ONEITER; one_sample_iter++)
             {
-                ForwardTransfer();     
-                if(GetError(cnt) < ERROR)    //如果误差比较小，则针对单个样本跳出循环
-                    break;
+                ForwardTransfer(); 
+                Type error = GetError(cnt);    
+                if(error < ERROR) 
+                    break; //如果误差比较小，则针对单个样本跳出循环
+                AdjustEta(last_error, error); 
+                last_error = error;
                 ReverseTransfer(cnt);  
             }
         }
@@ -47,16 +50,7 @@ void BP::Train(bool debug /*=false */)
             if(accu < ACCU) //可以debug时手工禁止跳出..
                 break;
         }
-        if(accu > last_acc) { //误差震荡，需减少学习率 :
-            if (last_acc > 0) {
-                if(ETA_W > MIN_ETA) {
-                    ETA_W *=   0.5;   //权值调整率
-                    ETA_B *=   0.5;    //阀值调整率
-                } 
-                printf("eta_w = %lf, eta_b =%lg\n", ETA_W, ETA_B); 
-            } else 
-                last_acc = accu;
-        } 
+        AdjustEta(last_acc, accu); //误差震荡，需减少学习率 :
         last_acc = accu; 
         if (accu < min_acc) { //只记录最小值..
             min_acc = accu;
@@ -433,4 +427,16 @@ int main() {
     }
 
     return 0;
+}
+
+void BP::AdjustEta(Type last_acc, Type accu) { //用局部变量覆盖同名类变量..主要是懒得替换了..
+        if(last_acc < 0)
+            return;
+        if(accu > last_acc) { //误差震荡，需减少学习率 :
+            if(ETA_W > MIN_ETA) {
+                ETA_W *=   0.5;   //权值调整率
+                ETA_B *=   0.5;    //阀值调整率
+            } 
+            printf("eta_w = %lf, eta_b =%lg\n", ETA_W, ETA_B); 
+        } 
 }

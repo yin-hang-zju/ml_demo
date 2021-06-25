@@ -37,6 +37,7 @@ private:
     Type Sigmoid(const Type x);
     Type Activator(const Type);   //计算激活函数的值,如Sigmoid
     Type Diff_Activator(const Type x);
+    void AdjustEta(Type last_acc, Type accu);
  
 private:
     double REGULAR;     //正则化Weight Decay
