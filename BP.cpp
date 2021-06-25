@@ -25,7 +25,7 @@ void BP::Train(bool debug /*=false */)
     {
         if (debug)
             OutputNetwork(); //输出看看。可禁掉.. 
-        if (ETA_W < SMALL_ETA) { ETA_W = SMALL_ETA; ETA_B = 0.1*SMALL_ETA; } //让学习率恢复一下..
+        //if (ETA_W < SMALL_ETA) { ETA_W = SMALL_ETA; ETA_B = 0.1*SMALL_ETA; } //让学习率恢复一下..
         for(int cnt = 0; cnt < num; cnt++)
         {
             //第一层输入节点赋值
@@ -50,7 +50,7 @@ void BP::Train(bool debug /*=false */)
             if(accu < ACCU) //可以debug时手工禁止跳出..
                 break;
         }
-        AdjustEta(last_acc, accu); //误差震荡，需减少学习率 :
+        if(AdjustEta(last_acc, accu)); else{if (ETA_W < SMALL_ETA) { ETA_W = SMALL_ETA; ETA_B = 0.1*SMALL_ETA; }} //误差震荡，需减少学习率 :
         last_acc = accu; 
         if (accu < min_acc) { //只记录最小值..
             min_acc = accu;
@@ -429,14 +429,16 @@ while(1) {
     return 0;
 }
 
-void BP::AdjustEta(Type last_acc, Type accu) { //用局部变量覆盖同名类变量..主要是懒得替换了..
+bool BP::AdjustEta(Type last_acc, Type accu) { //用局部变量覆盖同名类变量..主要是懒得替换了..
         if(last_acc < 0)
-            return;
+            return false;
         if(accu > last_acc) { //误差震荡，需减少学习率 :
             if(ETA_W > MIN_ETA) {
                 ETA_W *=   0.5;   //权值调整率
                 ETA_B *=   0.5;    //阀值调整率
             } 
             printf("eta_w = %lf, eta_b =%lg\n", ETA_W, ETA_B); 
+            return true; //如果是accu，说明不能恢复学习率..
         } 
+        return false;
 }
