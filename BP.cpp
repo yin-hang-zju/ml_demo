@@ -5,7 +5,7 @@
 #include "BP.h"
 
 int seed=1;
-Type MIN_ETA = 1E-99, SMALL_ETA=0.0001, BB;// = A / ( exp(-1.0/B/B) + 1.0);
+Type MIN_ETA = 1E-99, SMALL_ETA=0.0001, TOO_SMALL=1E-50, BB;// = A / ( exp(-1.0/B/B) + 1.0);
 //获取训练所有样本数据
 void BP::GetData(const Vector<Data> _data)
 {
@@ -25,7 +25,7 @@ void BP::Train(bool debug /*=false */)
     {
         if (debug)
             OutputNetwork(); //输出看看。可禁掉.. 
-        //if (ETA_W < SMALL_ETA) { ETA_W = SMALL_ETA; ETA_B = 0.1*SMALL_ETA; } //让学习率恢复一下..
+        //int cnt = rand()%num; //
         for(int cnt = 0; cnt < num; cnt++)
         {
             //第一层输入节点赋值
@@ -50,7 +50,13 @@ void BP::Train(bool debug /*=false */)
             if(accu < ACCU) //可以debug时手工禁止跳出..
                 break;
         }
-        if(AdjustEta(last_acc, accu)); else{if (ETA_W < SMALL_ETA) { ETA_W = SMALL_ETA; ETA_B = 0.1*SMALL_ETA; }} //误差震荡，需减少学习率 :
+        //误差震荡，需减少学习率 
+        if(AdjustEta(last_acc, accu) == false) {
+            if (ETA_W < SMALL_ETA) { //若未震荡，可以让学习率恢复一下..
+                ETA_W = SMALL_ETA; 
+                ETA_B = 0.1*SMALL_ETA; 
+            }
+        }
         last_acc = accu; 
         if (accu < min_acc) { //只记录最小值..
             min_acc = accu;
@@ -195,15 +201,6 @@ void BP::ForwardTransfer()
     }
 }
 
-//计算单个样本的误差
-Type BP::GetError(int cnt)
-{
-    Type ans = 0;
-    for(int i = 0; i < ou_num; i++)
-        ans += 0.5 * (x[LAYER-1][i] - data.at(cnt).y[i]) * (x[LAYER-1][i] - data.at(cnt).y[i]);
-    return ans;
-}
-
 //误差信号反向传递子过程
 void BP::ReverseTransfer(int cnt)
 {   
@@ -232,12 +229,27 @@ void BP::ReverseTransfer(int cnt)
 
         //更新 :  w(k) = w(k) - eta * (x(k-1)*delta(k))T
         //        b(k) = b(k) - eta* (delta(k))T
+        Type testEta = delta[0] * x[k-1][0]; //算算变化率是否过于夸张..
+        if (testEta > 1.0) { //随便拍个数，太小的变化量可以不考虑//
+            testEta = w[k][0][0] / testEta;
+            if (testEta < 0)
+                testEta = -testEta;
+            if (testEta < TOO_SMALL) { //拍的警戒值..
+                if (ETA_W > testEta) {
+                    ETA_W = 0.5 * testEta; //直接testEta就改成0了，不好。这里也设个断点。考虑让ETA调成 w[k][i][j]/delta[j] * x[k-1][i]  
+                    ETA_B = 0.1 * ETA_W;
+                }
+            }
+        }
         for(i = 0; i < hd_nums[k-1]; i++)
         {
-            for(j = 0; j < hd_nums[k]; j++)
+            for(j = 0; j < hd_nums[k]; j++) {
                 w[k][i][j] = w[k][i][j]*(1-ETA_W*REGULAR) - ETA_W * delta[j] * x[k-1][i]; 
+                if(w[k][i][j] > 1.0/TOO_SMALL) 
+                    ETA_W = ETA_W; //便于设断点,追查+Inf..
+            }
         }
-        for(i = 0; i < hd_nums[k]; i++)
+        for(i = 0; i < hd_nums[k]; i++) //按原来下载的代码中抄的是 i < hd_nums[k] ，但感觉应该k-1有效吧..
             b[k][i] -= ETA_B * delta[i];
     }
         //delta[k] += tmp[i] * Diff_Activator(x[k][i]);
@@ -250,6 +262,15 @@ void BP::ReverseTransfer(int cnt)
     }*/
 } // tmp=(y-x[k]); delta = tmp multiply Diff_Activator(x[k]); tmp = delta * w
         //CalcDelta(cnt);   UpdateNetWork();
+//计算单个样本的误差
+Type BP::GetError(int cnt)
+{
+    Type ans = 0;
+    for(int i = 0; i < ou_num; i++)
+        ans += 0.5 * (x[LAYER-1][i] - data.at(cnt).y[i]) * (x[LAYER-1][i] - data.at(cnt).y[i]);
+    return ans;
+}
+
 //计算所有样本的精度——下载的程序这个Accu的命名不大好..但各种大小写变形用了很多就先不改了.叫Loss或Cost更好。多分类时一般建议改用交叉熵..
 Type BP::GetAccu()
 {
@@ -261,9 +282,9 @@ Type BP::GetAccu()
         for(int j = 0; j < m; j++)
             x[0][j] = data.at(i).x[j];
         ForwardTransfer();
-        int n = data.at(i).y.size();
-        for(int j = 0; j < n; j++)
-            ans += 0.5 * (x[LAYER-1][j] - data.at(i).y[j]) * (x[LAYER-1][j] - data.at(i).y[j]);
+        ans += GetError(i);
+        //int n = data.at(i).y.size();
+        //for(int j = 0; j < n; j++) //    ans += 0.5 * (x[LAYER-1][j] - data.at(i).y[j]) * (x[LAYER-1][j] - data.at(i).y[j]);
     }
     return ans / num;
 }
