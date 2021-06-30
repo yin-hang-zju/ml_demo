@@ -212,20 +212,6 @@ void BP::ReverseTransfer(int cnt)
         delta[i] = x[k][i] - data.at(cnt).y[i]; 
     }
     for(k = LAYER-1; k>1; k--) {
-        for(j = 0; j < hd_nums[k-1]; j++) {
-            tmp[j] = 0;
-            for(i = 0; i < hd_nums[k]; i++) {
-                tmp[j] += delta[i]*w[k][j][i]; //不是w[k][i][j]..
-            }            
-            Type t = 0;
-            for(i = 0; i < hd_nums[k-2]; i++)
-                t += w[k-1][i][j] * x[k-2][i];
-            t += b[k-1][j];
-            tmp[j] *= Diff_Activator(t);
-        }
-        for(j = 0; j < hd_nums[k-1]; j++) {
-            delta[j] = tmp[j];
-        }
 
         //更新 :  w(k) = w(k) - eta * (x(k-1)*delta(k))T
         //        b(k) = b(k) - eta* (delta(k))T
@@ -244,14 +230,40 @@ void BP::ReverseTransfer(int cnt)
         for(i = 0; i < hd_nums[k-1]; i++)
         {
             for(j = 0; j < hd_nums[k]; j++) {
-                w[k][i][j] = w[k][i][j]*(1-ETA_W*REGULAR) - ETA_W * delta[j] * x[k-1][i]; 
+                w[k][i][j] = w[k][i][j]*(1-ETA_W*REGULAR) - ETA_W * delta[j] * x[k-1][i]; //delta[j] * x[k-1][i] 是不是反了?? 
                 if(w[k][i][j] > 1.0/TOO_SMALL) 
                     ETA_W = ETA_W; //便于设断点,追查+Inf..
             }
         }
         for(i = 0; i < hd_nums[k]; i++) //按原来下载的代码中抄的是 i < hd_nums[k] ，但感觉应该k-1有效吧..
             b[k][i] -= ETA_B * delta[i];
+
+        for(j = 0; j < hd_nums[k-1]; j++) {
+            tmp[j] = 0;
+            for(i = 0; i < hd_nums[k]; i++) {
+                tmp[j] += delta[i]*w[k][j][i]; //不是w[k][i][j]..
+            }            
+            Type t = 0; //正向传播得到激活前的x[k-1]
+            for(i = 0; i < hd_nums[k-2]; i++)
+                t += w[k-1][i][j] * x[k-2][i];
+            t += b[k-1][j];
+            tmp[j] *= Diff_Activator(t);
+        }
+        for(j = 0; j < hd_nums[k-1]; j++) {
+            delta[j] = tmp[j];
+        }
     }
+    //k=1;
+    for(i = 0; i < hd_nums[k-1]; i++)
+    {
+        for(j = 0; j < hd_nums[k]; j++) {
+            w[k][i][j] = w[k][i][j]*(1-ETA_W*REGULAR) - ETA_W * delta[j] * x[k-1][i]; //delta[j] * x[k-1][i] 是不是反了?? 
+            if(w[k][i][j] > 1.0/TOO_SMALL) 
+                ETA_W = ETA_W; //便于设断点,追查+Inf..
+        }
+    }
+    for(i = 0; i < hd_nums[k]; i++) //按原来下载的代码中抄的是 i < hd_nums[k] ，但感觉应该k-1有效吧..
+        b[k][i] -= ETA_B * delta[i];
         //delta[k] += tmp[i] * Diff_Activator(x[k][i]);
     // 第k层的delta,有0~hd_nums[k-1]共1*k维, = 第(k+1)层的delta（1*hd_nums[k+1]维） * 第k+1层的w（hd_nums[k+1}*hd_nums[k]维），后，每项乘以标量 Diff_Activator(激活前的第k层输出，即wx+b)
 
