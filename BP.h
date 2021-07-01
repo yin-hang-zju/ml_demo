@@ -38,6 +38,7 @@ private:
     Type Activator(const Type);   //计算激活函数的值,如Sigmoid
     Type Diff_Activator(const Type x);
     bool AdjustEta(Type last_acc, Type accu);
+    Type GetLossFor(Vector<Data> dataset); //计算新的集合的loss
  
 private:
     double REGULAR;     //正则化Weight Decay

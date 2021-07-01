@@ -25,8 +25,8 @@ void BP::Train(bool debug /*=false */)
     {
         if (debug)
             OutputNetwork(); //输出看看。可禁掉.. 
-        //int cnt = rand()%num; //每个样本循环时，并没有算平均的梯度，所以与随机梯度下降应该一样?反而有固定顺序的缺点..
-        for(int cnt = 0; cnt < num; cnt++)
+        int cnt = rand()%num; //每个样本循环时，并没有算平均的梯度，所以与随机梯度下降应该一样?反而有固定顺序的缺点..
+        //for(int cnt = 0; cnt < num; cnt++)
         {
             //第一层输入节点赋值
             for(int i = 0; i < in_num; i++)
@@ -145,7 +145,7 @@ void BP::InitNetWork()
     REGULAR  = 0; //一开始可不加,眼看过拟合了再加。0.01;      //正则化Weight Decay
     A =  1.0;//     30.0   ;
     B =  0.1;//     10.0   ;//A和B是S型函数的参数
-    ITERS =   999000    ;//最大训练次数,原来是1000
+    ITERS =   9999000    ;//最大训练次数,原来是1000
     ERROR =   0.002  ;//单个样本允许的误差
     ONEITER = 10000    ;//单个样本最大训练次数,原来没有上限
     ACCU =    0.00000001; //0.005  ;//每次迭代允许的误差
@@ -359,8 +359,8 @@ Type BP::Sigmoid(const Type x)
 //计算Activator函数的值
 Type BP::Activator(const Type x)
 {
-    Type res =  A / (1 + exp(-x / B));
-    return res;
+    //Type res =  A / (1 + exp(-x / B));
+    //return res;
     if (x >= 0.0)
         return A*x;
     else 
@@ -368,21 +368,62 @@ Type BP::Activator(const Type x)
 }
 
 Type BP::Diff_Activator(const Type x) {
-    Type t = Sigmoid(x);
-    t = t * (1.0 - t) * BB;
-    return t;
+    //Type t = Sigmoid(x);
+    //t = t * (1.0 - t) * BB;
+    //return t;
     if (x >= 0.0)
         return A;
     else 
         return B;
 }
 
+bool BP::AdjustEta(Type last_acc, Type accu) { //用局部变量覆盖同名类变量..主要是懒得替换了..
+        if(last_acc < 0)
+            return false;
+        if(accu > last_acc) { //误差震荡，需减少学习率 :
+            if(ETA_W > MIN_ETA) {
+                ETA_W *=   0.5;   //权值调整率
+                ETA_B *=   0.5;    //阀值调整率
+            } 
+            printf("eta_w = %lf, eta_b =%lg\n", ETA_W, ETA_B); 
+            return true; //如果是accu，说明不能恢复学习率..
+        } 
+        return false;
+}
+
+//计算所有样本的精度——下载的程序这个Accu的命名不大好..但各种大小写变形用了很多就先不改了.叫Loss或Cost更好。多分类时一般建议改用交叉熵..
+Type BP::GetLossFor(Vector<Data> dataset)
+{
+    Type ans = 0;
+    int num = dataset.size();
+    for(int i = 0; i < num; i++)
+    {
+        int m = dataset.at(i).x.size();
+        for(int j = 0; j < m; j++)
+            x[0][j] = dataset.at(i).x[j];
+        ForwardTransfer();
+        ans += GetError(i);
+        //int n = data.at(i).y.size();
+        //for(int j = 0; j < n; j++) //    ans += 0.5 * (x[LAYER-1][j] - data.at(i).y[j]) * (x[LAYER-1][j] - data.at(i).y[j]);
+    }
+    return ans / num;
+}
+Type linar(Type x) {
+    return 11.2*x;
+}
+Type square(Type x) {
+    return x*x;
+}
 int main() {
     seed = time(NULL); 
     printf("seed = %d\n", seed); 
     srand(seed); 
     BP a;
     int i;
+    Type (*func[3])(Type);
+    func[0]=square;
+    func[1]=linar;
+    func[2]=sin;
     /*************控制这里切换注释段,为啥不#ifdef..   * /
     int n = 2;
     Vector<Type> x;
@@ -418,27 +459,27 @@ int main() {
 //{0.1,0.2,0.3};
     printf("x.size=%lu\n", x.size());
     Vector<Type> y;
-    y.push_back(1);//0.6);
+    y.push_back(1);//0.6 这个数据留一个不规律的，噪声点 );
     Data d;
     d.x=x;
     d.y=y;
     Vector<Data> dataset;
     dataset.push_back(d);
-    for(i=0; i<n; i++)
-        d.x[i] *= 2.0;
-    //d.y[0] *= 2.0;
-    dataset.push_back(d);
+    //for(i=0; i<n; i++)
+    //    d.x[i] *= 2.0;
+    ////d.y[0] *= 2.0;
+    //dataset.push_back(d);
     int nd;
     for(nd=0; nd<100; nd++) {
         d.y[0] = 0.0;
         for(i=0; i<n; i++) {
             d.x[i] = getRandNum(0, 0); //1.0 - 2.0*rand()/RAND_MAX;
-            d.y[0] += d.x[i];
+            d.y[0] += func[i](d.x[i]);
         }
-        if (d.y[0] > 0)
-            d.y[0] = 1;
-        else
-            d.y[0] = 0;
+        //if (d.y[0] > 0)
+        //    d.y[0] = 1;
+        //else
+        //    d.y[0] = 0;
         dataset.push_back(d);
     }
 /**/
@@ -450,19 +491,15 @@ int main() {
         d.y[0] = 0.0;
         for(i=0; i<n; i++) {
             d.x[i] = getRandNum(0, 0); //1.0 - 2.0*rand()/RAND_MAX;
-            d.y[0] += d.x[i];
+            d.y[0] += func[i](d.x[i]);
         }
-        if (d.y[0] > 0)
-            d.y[0] = 1;
-        else
-            d.y[0] = 0;
         dataset.push_back(d);
     }
 
     a.Train(true);
     //Type acu = a.GetAccu();
 //printf("acu = %lf\n", acu);
-while(1) {
+    while(1) {
     printf("Please input x(%d):\n", n);
     for(i=0; i<n; i++) {
         Type input;
@@ -476,16 +513,3 @@ while(1) {
     return 0;
 }
 
-bool BP::AdjustEta(Type last_acc, Type accu) { //用局部变量覆盖同名类变量..主要是懒得替换了..
-        if(last_acc < 0)
-            return false;
-        if(accu > last_acc) { //误差震荡，需减少学习率 :
-            if(ETA_W > MIN_ETA) {
-                ETA_W *=   0.5;   //权值调整率
-                ETA_B *=   0.5;    //阀值调整率
-            } 
-            printf("eta_w = %lf, eta_b =%lg\n", ETA_W, ETA_B); 
-            return true; //如果是accu，说明不能恢复学习率..
-        } 
-        return false;
-}
