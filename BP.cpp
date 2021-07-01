@@ -25,7 +25,7 @@ void BP::Train(bool debug /*=false */)
     {
         if (debug)
             OutputNetwork(); //输出看看。可禁掉.. 
-        //int cnt = rand()%num; //
+        //int cnt = rand()%num; //每个样本循环时，并没有算平均的梯度，所以与随机梯度下降应该一样?反而有固定顺序的缺点..
         for(int cnt = 0; cnt < num; cnt++)
         {
             //第一层输入节点赋值
@@ -383,7 +383,7 @@ int main() {
     srand(seed); 
     BP a;
     int i;
-    /*************控制这里切换注释段,为啥不#ifdef..   */
+    /*************控制这里切换注释段,为啥不#ifdef..   * /
     int n = 2;
     Vector<Type> x;
     //for(i=0; i<n; i++)
@@ -428,11 +428,11 @@ int main() {
         d.x[i] *= 2.0;
     //d.y[0] *= 2.0;
     dataset.push_back(d);
-    
-    for(int nd=0; nd<100; nd++) {
+    int nd;
+    for(nd=0; nd<100; nd++) {
         d.y[0] = 0.0;
         for(i=0; i<n; i++) {
-            d.x[i] = getRandNum(); //1.0 - 2.0*rand()/RAND_MAX;
+            d.x[i] = getRandNum(0, 0); //1.0 - 2.0*rand()/RAND_MAX;
             d.y[0] += d.x[i];
         }
         if (d.y[0] > 0)
@@ -445,6 +445,20 @@ int main() {
     printf("in.size=%lu, %lu. sample num=%lu\n", dataset[0].x.size(), d.x.size(), dataset.size());
 
     a.GetData(dataset);
+
+    for(nd=100; nd<200; nd++) {
+        d.y[0] = 0.0;
+        for(i=0; i<n; i++) {
+            d.x[i] = getRandNum(0, 0); //1.0 - 2.0*rand()/RAND_MAX;
+            d.y[0] += d.x[i];
+        }
+        if (d.y[0] > 0)
+            d.y[0] = 1;
+        else
+            d.y[0] = 0;
+        dataset.push_back(d);
+    }
+
     a.Train(true);
     //Type acu = a.GetAccu();
 //printf("acu = %lf\n", acu);
