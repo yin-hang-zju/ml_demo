@@ -359,8 +359,8 @@ Type BP::Sigmoid(const Type x)
 //计算Activator函数的值
 Type BP::Activator(const Type x)
 {
-    //Type res =  A / (1 + exp(-x / B));
-    //return res;
+    Type res =  A / (1 + exp(-x / B));
+    return res;
     if (x >= 0.0)
         return A*x;
     else 
@@ -368,13 +368,13 @@ Type BP::Activator(const Type x)
 }
 
 Type BP::Diff_Activator(const Type x) {
+    Type t = Sigmoid(x);
+    t = t * (1.0 - t) * BB;
+    return t;
     if (x >= 0.0)
         return A;
     else 
         return B;
-    //Type t = Sigmoid(x);
-    //t = t * (1.0 - t) * BB;
-    //return t;
 }
 
 int main() {
